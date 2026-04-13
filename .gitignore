@@ -16,10 +16,8 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -31,7 +29,6 @@ migrate_working_dir/
 .pub/
 /build/
 .packages
-.flutter-plugins-dependencies
 pubspec.lock
 
 # Symbolication related
@@ -44,11 +41,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Android related
-*.jks
-*.keystore
-local.properties
 android/.gradle/
 android/captures/
 android/gradlew
@@ -79,17 +71,11 @@ android/key.properties
 **/ios/Flutter/Flutter.podspec
 **/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/ephemeral/
-**/ios/Flutter/app.flx
-**/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
-**/ios/Flutter/flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 
-# Windows related
-windows/flutter/generated_plugin_registrant.cc
-windows/flutter/generated_plugin_registrant.h
-windows/flutter/generated_plugins.cmake
+# Windows - 完全排除 Windows 端
+windows/
 
 # macOS related
 **/macos/Flutter/GeneratedPluginRegistrant.swift
@@ -110,8 +96,25 @@ coverage/
 test/.test_coverage.dart
 test_driver/
 
-# Screenshots (UI test outputs)
+# UI 测试中间结果 - 完全排除
 screenshots/
+test_*.png
+*_test_*.png
+
+# 临时文档和分析文档 - 排除
+docs/milestone_*_analysis.md
+docs/camera_integration_guide.md
+docs/ui_test_guide.md
+
+# Scratch/临时工作目录
+scratch/
+
+# Node.js related (用于测试脚本)
+node_modules/
+package-lock.json
+
+# UI 测试配置（临时）
+ui_test_config.yaml
 
 # Temporary files
 *.tmp
@@ -121,8 +124,7 @@ screenshots/
 *~
 
 # Claude Code related
-.claude/memory/
-.claude/plans/
+.claude/
 
 # Environment files
 .env
@@ -137,3 +139,6 @@ firebase_options.dart
 # Sensitive data
 secrets/
 credentials/
+*.jks
+*.keystore
+local.properties
