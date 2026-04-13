@@ -15,7 +15,8 @@ class ShortcutToolbar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _ToolBtn(icon: Icons.auto_fix_high_outlined, label: '美颜', onTap: () {}),
+          _ToolBtn(
+              icon: Icons.auto_fix_high_outlined, label: '美颜', onTap: () {}),
           // Central shutter button
           GestureDetector(
             onTap: onShutter,
@@ -44,10 +45,8 @@ class ShortcutToolbar extends StatelessWidget {
                   color: Colors.white, size: 28),
             ),
           ),
-          _ToolBtn(
-              icon: Icons.color_lens_outlined, label: '滤镜', onTap: () {}),
-          _ToolBtn(
-              icon: Icons.timer_outlined, label: '定时', onTap: () {}),
+          _ToolBtn(icon: Icons.color_lens_outlined, label: '滤镜', onTap: () {}),
+          _ToolBtn(icon: Icons.timer_outlined, label: '定时', onTap: () {}),
         ],
       ),
     );

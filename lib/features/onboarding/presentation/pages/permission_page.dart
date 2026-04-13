@@ -10,7 +10,8 @@ class PermissionPage extends StatefulWidget {
   State<PermissionPage> createState() => _PermissionPageState();
 }
 
-class _PermissionPageState extends State<PermissionPage> with SingleTickerProviderStateMixin {
+class _PermissionPageState extends State<PermissionPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   Timer? _navigationTimer;
@@ -22,7 +23,8 @@ class _PermissionPageState extends State<PermissionPage> with SingleTickerProvid
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
+    _fadeAnimation =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
     _fadeController.forward();
 
     // 3-second splash timer
@@ -42,7 +44,8 @@ class _PermissionPageState extends State<PermissionPage> with SingleTickerProvid
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const LightingPage(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const LightingPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -88,8 +91,8 @@ class _PermissionPageState extends State<PermissionPage> with SingleTickerProvid
                   Text(
                     '喵~ 开启时尚补光',
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      letterSpacing: 2,
-                    ),
+                          letterSpacing: 2,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),

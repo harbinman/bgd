@@ -113,8 +113,7 @@ class _NavItem extends StatelessWidget {
                 color: color,
                 fontSize: 10,
                 letterSpacing: 0.2,
-                fontWeight:
-                    isActive ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ],

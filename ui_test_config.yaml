@@ -1,0 +1,150 @@
+# Flutter UI 自动化测试配置文件
+# 修改此文件可以自定义测试流程，无需修改脚本代码
+
+# 应用配置
+app:
+  package_name: "com.miaomiao.filllight"
+  activity: ".MainActivity"
+  apk_path: "build/app/outputs/flutter-apk/app-debug.apk"
+
+# 截图配置
+screenshot:
+  output_dir: "screenshots"
+  format: "png"
+  # 是否在截图文件名中包含时间戳
+  include_timestamp: true
+  # 截图质量 (1-100)
+  quality: 90
+
+# 测试场景配置
+test_scenarios:
+  # 场景1：启动流程测试
+  - name: "启动流程"
+    description: "测试应用启动和引导页"
+    enabled: true
+    steps:
+      - action: "launch"
+        description: "启动应用"
+        wait_after: 1500
+        screenshot: "01_app_launch"
+
+      - action: "wait"
+        description: "等待启动页动画"
+        duration: 2000
+        screenshot: "02_splash_screen"
+
+      - action: "wait"
+        description: "等待自动跳转到主界面"
+        duration: 1500
+        screenshot: "03_main_screen"
+
+  # 场景2：主界面测试
+  - name: "主界面UI"
+    description: "测试主界面的各个元素"
+    enabled: true
+    steps:
+      - action: "wait"
+        description: "等待主界面完全加载"
+        duration: 1000
+        screenshot: "04_main_ui_full"
+
+      - action: "wait"
+        description: "等待心形动画"
+        duration: 2000
+        screenshot: "05_heart_animation"
+
+  # 场景3：12宫格菜单测试
+  - name: "12宫格菜单"
+    description: "测试工具菜单的打开、显示和关闭"
+    enabled: true
+    steps:
+      - action: "tap"
+        description: "点击顶部工具按钮"
+        # 坐标需要根据实际设备调整
+        x: 100
+        y: 150
+        wait_after: 800
+        screenshot: "06_menu_opening"
+
+      - action: "wait"
+        description: "等待菜单完全展开"
+        duration: 1000
+        screenshot: "07_menu_full_open"
+
+      - action: "wait"
+        description: "查看12个网格项"
+        duration: 500
+        screenshot: "08_grid_items"
+
+  # 场景4：手势交互测试
+  - name: "手势交互"
+    description: "测试上滑关闭菜单"
+    enabled: true
+    steps:
+      - action: "swipe"
+        description: "向上滑动关闭菜单"
+        from_x: 500
+        from_y: 1000
+        to_x: 500
+        to_y: 300
+        duration: 300
+        wait_after: 500
+        screenshot: "09_swipe_gesture"
+
+      - action: "wait"
+        description: "等待菜单关闭动画"
+        duration: 800
+        screenshot: "10_menu_closed"
+
+  # 场景5：PIP容器测试
+  - name: "PIP相机预览"
+    description: "测试画中画容器"
+    enabled: true
+    steps:
+      - action: "wait"
+        description: "查看PIP容器位置"
+        duration: 500
+        screenshot: "11_pip_container"
+
+      - action: "drag"
+        description: "拖拽PIP容器"
+        from_x: 600
+        from_y: 1200
+        to_x: 200
+        to_y: 400
+        duration: 500
+        wait_after: 500
+        screenshot: "12_pip_dragged"
+
+  # 场景6：底部操作区测试
+  - name: "底部操作区"
+    description: "测试快捷工具栏和导航栏"
+    enabled: true
+    steps:
+      - action: "wait"
+        description: "查看底部操作区"
+        duration: 500
+        screenshot: "13_bottom_actions"
+
+# 设备配置（可选）
+device:
+  # 如果有多个设备，指定设备ID
+  # device_id: "emulator-5554"
+  # 屏幕密度（用于坐标计算）
+  density: 2.0
+  # 屏幕分辨率
+  width: 1080
+  height: 2400
+
+# 高级选项
+advanced:
+  # 每个操作前的默认等待时间（毫秒）
+  default_wait_before: 200
+  # 每个操作后的默认等待时间（毫秒）
+  default_wait_after: 500
+  # 失败重试次数
+  retry_count: 2
+  # 是否在失败时继续执行
+  continue_on_error: true
+  # 是否生成测试报告
+  generate_report: true

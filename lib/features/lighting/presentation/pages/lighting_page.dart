@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:screen_brightness/screen_brightness.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:miaomiao_fill_light/core/theme/app_theme.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/heart_painter.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/pip_container.dart';
@@ -21,6 +24,10 @@ class _LightingPageState extends State<LightingPage>
   bool _isMenuVisible = false;
   int _currentTabIndex = 1; // Fill Light tab active by default
 
+  // Milestone 3.1: Camera controller
+  List<CameraDescription>? _cameras;
+  CameraController? _cameraController;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +40,10 @@ class _LightingPageState extends State<LightingPage>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
+    // Milestone 3.2: Enable brightness lock and wakelock
+    _enableBrightnessLock();
+    WakelockPlus.enable();
+
     // Delay permission request so first frame renders first
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) _checkAndRequestPermissions();
@@ -41,7 +52,10 @@ class _LightingPageState extends State<LightingPage>
 
   @override
   void dispose() {
+    _cameraController?.dispose();
     _pulseController.dispose();
+    ScreenBrightness().resetScreenBrightness();
+    WakelockPlus.disable();
     super.dispose();
   }
 
@@ -56,6 +70,9 @@ class _LightingPageState extends State<LightingPage>
         statuses[Permission.photos]!.isLimited;
 
     if (cameraOk && photosOk) {
+      // Initialize camera after permissions granted
+      await _initializeCamera();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -68,6 +85,49 @@ class _LightingPageState extends State<LightingPage>
     } else if (statuses[Permission.camera]!.isPermanentlyDenied ||
         statuses[Permission.photos]!.isPermanentlyDenied) {
       _showOpenSettingsDialog();
+    }
+  }
+
+  Future<void> _enableBrightnessLock() async {
+    try {
+      await ScreenBrightness().setScreenBrightness(1.0);
+    } catch (e) {
+      debugPrint('Failed to set brightness: $e');
+    }
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras == null || _cameras!.isEmpty) {
+        debugPrint('No cameras available');
+        return;
+      }
+
+      // 查找前置摄像头（自拍场景优先使用前置）
+      CameraDescription? frontCamera;
+      try {
+        frontCamera = _cameras!.firstWhere(
+          (camera) => camera.lensDirection == CameraLensDirection.front,
+        );
+      } catch (e) {
+        // 如果没有前置摄像头，使用第一个可用相机
+        debugPrint('No front camera found, using first available camera');
+        frontCamera = _cameras![0];
+      }
+
+      _cameraController = CameraController(
+        frontCamera,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Camera initialization failed: $e');
     }
   }
 
@@ -91,8 +151,8 @@ class _LightingPageState extends State<LightingPage>
               openAppSettings();
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.vibrantPink),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.vibrantPink),
             child: const Text('去设置'),
           ),
         ],
@@ -171,8 +231,8 @@ class _LightingPageState extends State<LightingPage>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(
-                            _isMenuVisible ? 0.12 : 0.06),
+                        color: Colors.white
+                            .withOpacity(_isMenuVisible ? 0.12 : 0.06),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.1),
@@ -216,7 +276,10 @@ class _LightingPageState extends State<LightingPage>
           ),
 
           // ── 2.2 PIP Container ────────────────────────────────────────────
-          PipContainer(screenSize: screenSize),
+          PipContainer(
+            screenSize: screenSize,
+            controller: _cameraController,
+          ),
 
           // ── Bottom action zone ───────────────────────────────────────────
           Positioned(

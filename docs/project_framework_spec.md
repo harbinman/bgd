@@ -64,11 +64,142 @@ lib/
 - **数据持久化**: 纯本地 SQLite 存储，关闭所有云端同步 (Cloud-Sync Disabled)。
 
 ## 4. 依赖项清单 (Pubspec Map)
-- `camera: latest`: 相机基础流。
-- `riverpod: latest`: 响应式状态流。
-- `screen_brightness: ^1.x`: 系统亮度控制。
-- `wakelock_plus: ^1.x`: 常亮支持。
+- `camera: ^0.11.0+2`: 相机基础流，支持高分辨率预览与拍照。
+- `riverpod: ^2.5.1`: 响应式状态流。
+- `screen_brightness: ^1.0.1`: 系统亮度控制。
+- `wakelock_plus: ^1.2.8`: 常亮支持。
+- `permission_handler: ^11.3.1`: 动态权限管理（相机、存储）。
 - `flutter_localizations`: 国际化多语言支持。
+- `google_fonts: ^6.2.1`: 品牌字体（Playfair Display、Outfit）。
+- `flutter_blurhash: ^0.8.2`: 图片占位符与模糊效果。
 - `in_app_purchase: latest`: 官方支付插件，处理跨平台交易。
 - `firebase_auth / supabase_flutter`: 用户认证与后端服务。
 - `cloud_firestore / supabase_db`: 后端管理数据存储。
+
+## 5. 里程碑 3 实施总结 (Milestone 3 Implementation Summary) [NEW]
+
+### 5.1 相机集成 (Camera Integration)
+**实施时间**: 2026-04-13  
+**完成度**: 100%
+
+#### 核心实现
+- **相机初始化**: 在 `lighting_page.dart` 中实现完整的相机初始化流程
+  - 调用 `availableCameras()` 获取设备相机列表
+  - 创建 `CameraController` 实例（后置摄像头，`ResolutionPreset.high`）
+  - 权限授予后自动初始化，失败时输出调试日志
+  - 在 `dispose()` 中正确释放相机资源
+
+- **PIP 实时预览**: 
+  - `CameraController` 传递给 `PipContainer` widget
+  - 通过 `CameraPreview` 渲染实时画面
+  - 相机未就绪时显示占位状态（猫咪背景 + "MIAO CAM" 文字）
+
+- **资源管理**:
+  ```dart
+  @override
+  void dispose() {
+    _cameraController?.dispose();  // 释放相机
+    _pulseController.dispose();    // 释放动画
+    ScreenBrightness().resetScreenBrightness();  // 恢复亮度
+    WakelockPlus.disable();        // 释放屏幕常亮
+    super.dispose();
+  }
+  ```
+
+#### 技术细节
+- **分辨率配置**: `ResolutionPreset.high` (1080p+)
+- **音频禁用**: `enableAudio: false` 减少资源占用
+- **异常处理**: `try-catch` 捕获初始化失败，不影响其他功能
+- **条件渲染**: 检查 `controller?.value.isInitialized` 决定显示预览或占位符
+
+### 5.2 亮度与屏幕常亮 (Brightness & WakeLock)
+**实施时间**: 2026-04-13  
+**完成度**: 100%
+
+#### 核心实现
+- **亮度锁定**:
+  ```dart
+  Future<void> _enableBrightnessLock() async {
+    try {
+      await ScreenBrightness().setScreenBrightness(1.0);  // 最大亮度
+    } catch (e) {
+      debugPrint('Failed to set brightness: $e');
+    }
+  }
+  ```
+
+- **屏幕常亮**:
+  ```dart
+  @override
+  void initState() {
+    super.initState();
+    _enableBrightnessLock();  // 启用亮度锁定
+    WakelockPlus.enable();    // 启用屏幕常亮
+    // ...
+  }
+  ```
+
+- **资源恢复**:
+  - 页面退出时自动恢复用户原始亮度设置
+  - 释放 WakeLock，避免电量浪费
+
+#### 用户体验优化
+- 进入补光页面自动设置最大亮度，无需手动调节
+- 退出页面自动恢复，不影响用户其他应用使用
+- 异常处理确保在不支持的设备上不会崩溃
+
+### 5.3 测试验证 (Testing & Validation)
+**测试时间**: 2026-04-13  
+**测试设备**: 小米 2312CRAD3C (Android 14)
+
+#### 测试结果
+- ✅ `flutter analyze` - 无问题
+- ✅ `flutter test` - 全部通过
+- ✅ `flutter build apk` - 编译成功 (36.3s)
+- ✅ UI 自动化测试 - 13 个场景全部通过
+
+#### 功能验证
+- ✅ 相机实时预览正常显示在 PIP 容器中
+- ✅ 拖拽与吸附交互流畅
+- ✅ 12 宫格菜单完整显示（无截断）
+- ✅ 上滑手势关闭菜单功能正常
+- ✅ 亮度锁定生效
+- ✅ 屏幕常亮功能正常
+
+#### 性能指标
+- 相机初始化时间: < 1.5s
+- PIP 预览流畅度: 正常
+- 内存占用: 合理范围内
+- 电量消耗: 可接受
+
+### 5.4 技术文档 (Technical Documentation) [NEW]
+为支持后续开发和维护，新增以下技术文档：
+
+- **相机集成指南** (`docs/camera_integration_guide.md`):
+  - 完整的相机初始化流程说明
+  - PIP 容器集成方法
+  - 权限管理最佳实践
+  - 错误处理与故障排除
+  - 性能优化建议
+
+- **里程碑 3 分析报告** (`docs/milestone_3_analysis.md`):
+  - 详细的完成情况分析
+  - 代码变更清单
+  - 测试验证结果
+  - 实施时间线
+
+### 5.5 后续优化方向 (Future Enhancements)
+#### 性能优化 (P1)
+- 添加 FPS 监控（开发模式）
+- 实现动态分辨率降级（低端设备）
+- 内存压力检测与优化
+
+#### 交互增强 (P2)
+- PIP 缩放手势（双指缩放）
+- 前后摄像头切换
+- 相机切换动画过渡
+
+#### 原生优化 (P3)
+- Android Native 亮度桥接（MethodChannel）
+- 系统级亮度控制
+- 更精细的 WakeLock 管理

@@ -84,9 +84,17 @@ class _PipContainerState extends State<PipContainer> {
         widget.controller != null && widget.controller!.value.isInitialized;
 
     if (hasController) {
-      return AspectRatio(
-        aspectRatio: widget.controller!.value.aspectRatio,
-        child: CameraPreview(widget.controller!),
+      // 使用 ClipRect + FittedBox 确保相机画面填满容器且不失真
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: FittedBox(
+          fit: BoxFit.cover,  // 填充容器，保持比例，可能裁剪
+          child: SizedBox(
+            width: widget.controller!.value.previewSize!.height,
+            height: widget.controller!.value.previewSize!.width,
+            child: CameraPreview(widget.controller!),
+          ),
+        ),
       );
     }
 

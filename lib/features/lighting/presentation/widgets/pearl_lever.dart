@@ -29,7 +29,7 @@ class PearlLever extends StatelessWidget {
                 painter: CatEarPainter(),
               ),
             ),
-            
+
             // Glassmorphic Lever Body
             ClipRRect(
               borderRadius: BorderRadius.circular(30),
@@ -77,19 +77,23 @@ class CatEarPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
     final path = Path();
-    
+
     // Left Ear
     path.moveTo(size.width * 0.2, size.height);
     path.quadraticBezierTo(
-      size.width * 0.25, size.height * 0.1,
-      size.width * 0.4, size.height * 0.5,
+      size.width * 0.25,
+      size.height * 0.1,
+      size.width * 0.4,
+      size.height * 0.5,
     );
-    
+
     // Right Ear
     path.moveTo(size.width * 0.8, size.height);
     path.quadraticBezierTo(
-      size.width * 0.75, size.height * 0.1,
-      size.width * 0.6, size.height * 0.5,
+      size.width * 0.75,
+      size.height * 0.1,
+      size.width * 0.6,
+      size.height * 0.5,
     );
 
     canvas.drawPath(path, paint);

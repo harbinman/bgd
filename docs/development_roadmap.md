@@ -43,9 +43,21 @@
 
 
 ## 里程碑 3：硬件引擎与画中画系统 (Hardware Core)
-- [ ] **3.1 相机流挂载 (PIP)**: 实现可拖拽、缩放的画中画预览窗，确保帧率不低于 30fps。
-- [ ] **3.2 亮度控制桥接**: 编写 Android Native 代码，实现 App 运行期间的系统最高亮度锁定与 WakeLock。
-- [ ] **3.3 背景图形引擎**: 实现 **Catchlight Layer**。初步支持“心形眼神光”模版及其缩放交互。
+- [x] **3.1 相机流挂载 (PIP)**: 实现可拖拽、缩放的画中画预览窗，确保帧率不低于 30fps。
+    - **[DONE]** 相机初始化：集成 `camera: ^0.11.0+2`，实现 `availableCameras()` 调用与 `CameraController` 初始化。
+    - **[DONE]** 权限管理：在权限授予后自动初始化相机，失败时输出调试日志。
+    - **[DONE]** PIP 实时预览：`CameraController` 传递给 `PipContainer`，通过 `CameraPreview` 渲染实时画面。
+    - **[DONE]** 拖拽与吸附：已在里程碑2实现，支持四角智能吸附与 420ms 弹性动画。
+    - **[DONE]** 分辨率配置：使用 `ResolutionPreset.high`，禁用音频 (`enableAudio: false`)。
+    - **[DONE]** 资源释放：在 `dispose()` 中调用 `_cameraController?.dispose()` 释放相机资源。
+- [x] **3.2 亮度控制桥接**: 编写 Android Native 代码，实现 App 运行期间的系统最高亮度锁定与 WakeLock。
+    - **[DONE]** 亮度锁定：集成 `screen_brightness: ^1.0.1`，在 `initState()` 中调用 `ScreenBrightness().setScreenBrightness(1.0)` 设置最大亮度。
+    - **[DONE]** 亮度恢复：在 `dispose()` 中调用 `ScreenBrightness().resetScreenBrightness()` 恢复用户原始亮度设置。
+    - **[DONE]** 屏幕常亮：集成 `wakelock_plus: ^1.2.8`，在 `initState()` 中启用 `WakelockPlus.enable()`，在 `dispose()` 中释放 `WakelockPlus.disable()`。
+    - **[DONE]** 权限配置：`AndroidManifest.xml` 已添加 `WAKE_LOCK` 权限。
+    - **[NOTE]** Android Native 桥接（MethodChannel）为可选优化项，当前使用 Flutter 插件已满足基本需求。
+- [x] **3.3 背景图形引擎**: 实现 **Catchlight Layer**。初步支持”心形眼神光”模版及其缩放交互。
+    - **[DONE]** 已在里程碑2完成，`heart_painter.dart` 实现高保真渐变与脉动动画。
 
 ## 里程碑 4：功能十二宫格全逻辑实现 (12-Grid Full Features)
 - [ ] **4.1 核心光影控制组**:

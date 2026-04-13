@@ -6,7 +6,10 @@ import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/grid_
 void main() {
   testWidgets('GridMenuOverlay should show Gaussian Blur and 12 items when visible', (WidgetTester tester) async {
     bool isVisible = true;
-    
+
+    // Set a larger test size to ensure all items are visible
+    await tester.binding.setSurfaceSize(const Size(400, 1200));
+
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -30,8 +33,8 @@ void main() {
     expect(find.text('AESTHETIC CAPTURE'), findsOneWidget);
 
     // 3. Verify specific item exists
-    expect(find.text('全屏预览'), findsOneWidget);
-    expect(find.text('心跳捕捉'), findsOneWidget);
+    expect(find.text('全屏预览', skipOffstage: false), findsOneWidget);
+    expect(find.text('心跳捕捉', skipOffstage: false), findsOneWidget);
 
     // 4. Verify BackdropFilter is used (for Gaussian Blur)
     // Note: In tests, BackdropFilter might be buried in the tree

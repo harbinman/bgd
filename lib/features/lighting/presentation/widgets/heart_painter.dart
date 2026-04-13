@@ -13,14 +13,20 @@ class HeartPainter extends CustomPainter {
     final path = Path();
     path.moveTo(center.dx, center.dy - side * 0.35);
     path.cubicTo(
-      center.dx - side * 0.7, center.dy - side * 1.0,
-      center.dx - side * 1.2, center.dy + side * 0.1,
-      center.dx, center.dy + side * 0.9,
+      center.dx - side * 0.7,
+      center.dy - side * 1.0,
+      center.dx - side * 1.2,
+      center.dy + side * 0.1,
+      center.dx,
+      center.dy + side * 0.9,
     );
     path.cubicTo(
-      center.dx + side * 1.2, center.dy + side * 0.1,
-      center.dx + side * 0.7, center.dy - side * 1.0,
-      center.dx, center.dy - side * 0.35,
+      center.dx + side * 1.2,
+      center.dy + side * 0.1,
+      center.dx + side * 0.7,
+      center.dy - side * 1.0,
+      center.dx,
+      center.dy - side * 0.35,
     );
     path.close();
     return path;
@@ -40,7 +46,8 @@ class HeartPainter extends CustomPainter {
       path,
       Paint()
         ..color = AppTheme.vibrantPink.withOpacity((0.18 * _p).clamp(0.0, 1.0))
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, (80 * pulse).clamp(10.0, 120.0)),
+        ..maskFilter =
+            MaskFilter.blur(BlurStyle.normal, (80 * pulse).clamp(10.0, 120.0)),
     );
 
     // ── Layer 2: Radial gradient fill ─────────────────────────────────────────
@@ -73,7 +80,8 @@ class HeartPainter extends CustomPainter {
         ..color = AppTheme.vibrantPink.withOpacity((0.55 * _p).clamp(0.0, 1.0))
         ..style = PaintingStyle.stroke
         ..strokeWidth = (30.0 * pulse).clamp(20.0, 40.0)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, (25.0 * pulse).clamp(15.0, 35.0)),
+        ..maskFilter =
+            MaskFilter.blur(BlurStyle.normal, (25.0 * pulse).clamp(15.0, 35.0)),
     );
 
     // ── Layer 4: Crisp white edge ─────────────────────────────────────────────
