@@ -1,0 +1,40 @@
+name: miaomiao_fill_light
+description: "MiaoMiao Fill Light - A fashionable fill-light app for photography."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  
+  # Hardware & Permissions
+  camera: ^0.11.0+2
+  permission_handler: ^11.3.1
+  screen_brightness: ^1.0.1
+  wakelock_plus: ^1.2.8
+  
+  # UI & Styling
+  google_fonts: ^6.2.1
+  flutter_blurhash: ^0.8.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/onboarding_cat.png
+
+  # Add fonts here later for Playfair Display...

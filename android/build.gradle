@@ -1,0 +1,48 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+subprojects {
+    // Provide a fallback 'flutter' extension ONLY to plugin subprojects.
+    if (project.name != "app" && !project.hasProperty('flutter')) {
+        project.extensions.add('flutter', [
+            compileSdkVersion: 35,
+            minSdkVersion: 21,
+            targetSdkVersion: 34,
+            ndkVersion: "27.0.12077973"
+        ])
+    }
+
+    if (project.name != "app") {
+        try {
+            project.evaluationDependsOn(":app")
+        } catch (Exception e) {}
+        
+        if (!project.state.executed) {
+            project.afterEvaluate { p ->
+                if (p.hasProperty('android')) {
+                    p.android {
+                        compileSdkVersion 35
+                        ndkVersion "27.0.12077973"
+                        defaultConfig {
+                            minSdkVersion 21
+                            targetSdkVersion 34
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
