@@ -39,7 +39,18 @@ lib/
 - **Liquid Menu (分栏菜单)** [FINALIZED]:
     - **高保真模糊**：使用 `ImageFilter.blur(sigma: 30)` 实现毛玻璃全屏背景。
     - **动画系统**：采用顶部下滑（Top-down Slide）逻辑，通过 `Align.topCenter` 与基于 `AnimationController` 的 Y 轴偏移驱动。
-    - **渲染兼容性修复**：面板容器应用了统一颜色的 `Border.all`，成功绕过了 Flutter `BoxDecoration` 对“非统一边框颜色与 borderRadius 并存”时的运行时崩溃限制。
+    - **渲染兼容性修复**：面板容器应用了统一颜色的 `Border.all`，成功绕过了 Flutter `BoxDecoration` 对”非统一边框颜色与 borderRadius 并存”时的运行时崩溃限制。
+    - **手势交互增强 [NEW]**：
+        - 实现向上滑动手势关闭功能，支持拖拽偏移实时跟随
+        - 拖拽阈值：向上拖拽 > 120px 或快速滑动速度 < -600px/s 触发关闭
+        - 拖拽手柄动态反馈：拖拽时宽度和透明度实时变化，提供视觉反馈
+        - 未达到关闭条件时自动回弹到原位
+    - **布局优化 [NEW]**：
+        - 容器高度从 `screenHeight * 0.72` 增加到 `0.78`
+        - 顶部 padding 从 60px 优化到 50px
+        - 网格行间距从 24px 优化到 20px
+        - 添加 `childAspectRatio: 0.85` 确保 12 个网格项完整显示
+        - 保持无滚动设计（`NeverScrollableScrollPhysics()`）
 - **Bottom Action Zone (底部操作区)** [FINALIZED]:
     - **ShortcutToolbar Widget**：独立的快捷操作行组件，包含 Beauty / 大圆快门 / Filter / Timer。快门按钮采用 64dp `RadialGradient` 粉色圆形背景，强化点击感。
     - **BottomNavBar Widget**：毛玻璃胶囊导航栏，选中项带顶部粉色偏移指示条。

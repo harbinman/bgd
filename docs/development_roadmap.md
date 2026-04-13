@@ -29,8 +29,10 @@
     - **[DONE]** 添加“猫耳”轮廓视觉触发点，支持 12 宫格呼起。
 - [x] **2.4 12 宫格工具栏与液态动画**: 
     - **[DONE]** 实现 30px 高斯模糊的毛玻璃全屏面板。
-    - **[DONE]** 绑定“液态流动”上滑弹出动画 (Liquid Animation)。
+    - **[DONE]** 绑定”液态流动”上滑弹出动画 (Liquid Animation)。
     - **[DONE]** 开发符合 0.5pt 极细线性规范的 12 宫格工具图标。
+    - **[DONE]** 布局优化：调整容器高度至 78%，优化内部间距，添加网格宽高比控制，确保 12 个网格项完整显示。
+    - **[DONE]** 手势交互增强：实现向上滑动手势关闭功能，支持拖拽实时跟随和视觉反馈。
 - [x] **2.5 主界面 UI 对齐修正 (UI Gap Fix) [FINALIZED]** — 基于 `ui_references/main_screen.png` 视觉对比并完成全量对齐：
     - **[P0 DONE]** 心形眼神光视觉重构：大面积亮粉色高保真发光体。基于 `RadialGradient` 实现（白 `0xFFFFFFFF` → 珍珠粉 `0xFFFFD1DC` → 亮粉 `0xFFFF1493` → 深玫瑰 `0xFF8B0050`）。
     - **[P0 DONE]** 稳定性增强：全量应用 `pulse.clamp(0.0, 1.0)` 策略，彻底解决 `dart:ui` 渲染层在 pulse > 1.0 时的 Opacity Assertion Error 崩溃，确保在 Android 33+ 及全型号机型的帧率稳定性。
