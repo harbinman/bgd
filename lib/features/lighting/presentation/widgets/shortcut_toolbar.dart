@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:miaomiao_fill_light/core/theme/app_theme.dart';
+import 'dart:io';
 
-/// Shortcut toolbar row: Beauty | Shutter | Filter | Timer
+/// Shortcut toolbar row: Thumbnail | Shutter | Filter | Timer
 class ShortcutToolbar extends StatelessWidget {
   final VoidCallback onShutter;
+  final VoidCallback? onShutterLongPressStart;
+  final VoidCallback? onShutterLongPressEnd;
+  final VoidCallback? onFilterTap;
+  final VoidCallback? onTimerTap;
+  final String? recentPhotoPath;
+  final VoidCallback? onThumbnailTap;
 
-  const ShortcutToolbar({super.key, required this.onShutter});
+  const ShortcutToolbar({
+    super.key,
+    required this.onShutter,
+    this.onShutterLongPressStart,
+    this.onShutterLongPressEnd,
+    this.onFilterTap,
+    this.onTimerTap,
+    this.recentPhotoPath,
+    this.onThumbnailTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,11 +31,39 @@ class ShortcutToolbar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _ToolBtn(
-              icon: Icons.auto_fix_high_outlined, label: '美颜', onTap: () {}),
+          // Thumbnail preview
+          GestureDetector(
+            onTap: onThumbnailTap,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
+                border: Border.all(
+                  color: AppTheme.pearlPink.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: recentPhotoPath != null
+                  ? ClipOval(
+                      child: Image.file(
+                        File(recentPhotoPath!),
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Icon(
+                      Icons.photo_library_outlined,
+                      color: Colors.white.withOpacity(0.3),
+                      size: 24,
+                    ),
+            ),
+          ),
           // Central shutter button
           GestureDetector(
             onTap: onShutter,
+            onLongPressStart: (_) => onShutterLongPressStart?.call(),
+            onLongPressEnd: (_) => onShutterLongPressEnd?.call(),
             child: Container(
               width: 68,
               height: 68,
@@ -45,8 +89,14 @@ class ShortcutToolbar extends StatelessWidget {
                   color: Colors.white, size: 28),
             ),
           ),
-          _ToolBtn(icon: Icons.color_lens_outlined, label: '滤镜', onTap: () {}),
-          _ToolBtn(icon: Icons.timer_outlined, label: '定时', onTap: () {}),
+          _ToolBtn(
+              icon: Icons.color_lens_outlined,
+              label: '滤镜',
+              onTap: onFilterTap ?? () {}),
+          _ToolBtn(
+              icon: Icons.timer_outlined,
+              label: '定时',
+              onTap: onTimerTap ?? () {}),
         ],
       ),
     );

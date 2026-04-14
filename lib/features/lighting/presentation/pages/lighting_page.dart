@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:image/image.dart' as img;
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:miaomiao_fill_light/core/theme/app_theme.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/heart_painter.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/pip_container.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/grid_menu_overlay.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/shortcut_toolbar.dart';
 import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/bottom_nav_bar.dart';
+import 'package:miaomiao_fill_light/features/lighting/presentation/widgets/filter_tray.dart';
+import 'package:miaomiao_fill_light/features/lighting/domain/models/filter_type.dart';
+import 'package:miaomiao_fill_light/features/lighting/presentation/pages/photo_preview_page.dart';
 
 class LightingPage extends StatefulWidget {
   const LightingPage({super.key});
@@ -27,6 +37,17 @@ class _LightingPageState extends State<LightingPage>
   // Milestone 3.1: Camera controller
   List<CameraDescription>? _cameras;
   CameraController? _cameraController;
+
+  // Milestone 4: Photo capture & filters
+  FilterType _currentFilter = FilterType.none;
+  bool _showFlashOverlay = false;
+  int? _countdownSeconds;
+  bool _isBurstMode = false;
+  int _burstCount = 0;
+  List<String> _recentPhotos = [];
+  bool _showFilterTray = false;
+  int? _timerDuration;
+  bool _isCapturing = false;
 
   @override
   void initState() {
@@ -160,6 +181,216 @@ class _LightingPageState extends State<LightingPage>
     );
   }
 
+  // Milestone 4.1: 拍照功能
+  Future<void> _takePicture() async {
+    if (_cameraController == null ||
+        !_cameraController!.value.isInitialized ||
+        _isCapturing) {
+      return;
+    }
+
+    try {
+      setState(() => _isCapturing = true);
+
+      // 1. 拍摄照片
+      final XFile image = await _cameraController!.takePicture();
+
+      // 2. 触觉反馈
+      HapticFeedback.mediumImpact();
+
+      // 3. 闪光动画
+      setState(() => _showFlashOverlay = true);
+      await Future.delayed(const Duration(milliseconds: 100));
+      setState(() => _showFlashOverlay = false);
+
+      // 4. 保存照片
+      await _savePhoto(image);
+    } catch (e) {
+      debugPrint('拍照失败: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('拍照失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isCapturing = false);
+    }
+  }
+
+  // Milestone 4.3: 保存照片到相册
+  Future<void> _savePhoto(XFile image) async {
+    try {
+      // 读取照片数据
+      final bytes = await image.readAsBytes();
+
+      // 应用滤镜（如果有）
+      Uint8List finalBytes;
+      if (_currentFilter != FilterType.none) {
+        final img.Image? originalImage = img.decodeImage(bytes);
+        if (originalImage != null) {
+          final filteredImage = _applyImageFilter(originalImage, _currentFilter);
+          finalBytes = Uint8List.fromList(img.encodeJpg(filteredImage, quality: 95));
+        } else {
+          finalBytes = bytes;
+        }
+      } else {
+        finalBytes = bytes;
+      }
+
+      // 保存到相册
+      final result = await ImageGallerySaver.saveImage(
+        finalBytes,
+        quality: 95,
+        name: 'BGD_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      // 保存到临时目录用于缩略图预览
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = '${tempDir.path}/BGD_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final tempFile = File(tempPath);
+      await tempFile.writeAsBytes(finalBytes);
+
+      // 更新最近照片列表
+      setState(() {
+        _recentPhotos.insert(0, tempPath);
+        if (_recentPhotos.length > 10) {
+          _recentPhotos.removeLast();
+        }
+      });
+
+      // 显示成功提示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📸 照片已保存'),
+            backgroundColor: AppTheme.vibrantPink,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      debugPrint('照片保存成功: $result');
+    } catch (e) {
+      debugPrint('保存照片失败: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('保存失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // 应用滤镜到图像
+  img.Image _applyImageFilter(img.Image image, FilterType filter) {
+    switch (filter) {
+      case FilterType.none:
+        return image;
+      case FilterType.grayscale:
+        return img.grayscale(image);
+      case FilterType.sepia:
+        return img.sepia(image);
+      case FilterType.cool:
+        // 冷色调：降低红色，增加蓝色
+        final adjusted = img.adjustColor(image, saturation: 0.9);
+        return _adjustColorChannels(adjusted, redFactor: 0.9, blueFactor: 1.1);
+      case FilterType.warm:
+        // 暖色调：增加红色，降低蓝色
+        final adjusted = img.adjustColor(image, saturation: 1.1);
+        return _adjustColorChannels(adjusted, redFactor: 1.2, blueFactor: 0.8);
+      case FilterType.vintage:
+        return img.adjustColor(
+          image,
+          saturation: 0.8,
+          brightness: 1.1,
+          contrast: 1.2,
+        );
+      case FilterType.vivid:
+        return img.adjustColor(image, saturation: 1.5, contrast: 1.2);
+    }
+  }
+
+  // 手动调整颜色通道
+  img.Image _adjustColorChannels(img.Image image, {double redFactor = 1.0, double greenFactor = 1.0, double blueFactor = 1.0}) {
+    final result = img.Image.from(image);
+    for (int y = 0; y < result.height; y++) {
+      for (int x = 0; x < result.width; x++) {
+        final pixel = result.getPixel(x, y);
+        final r = (pixel.r * redFactor).clamp(0, 255).toInt();
+        final g = (pixel.g * greenFactor).clamp(0, 255).toInt();
+        final b = (pixel.b * blueFactor).clamp(0, 255).toInt();
+        result.setPixelRgba(x, y, r, g, b, pixel.a.toInt());
+      }
+    }
+    return result;
+  }
+
+  // Milestone 4.1: 倒计时拍摄
+  Future<void> _startCountdown(int seconds) async {
+    setState(() => _countdownSeconds = seconds);
+
+    for (int i = seconds; i > 0; i--) {
+      if (!mounted) return;
+      setState(() => _countdownSeconds = i);
+      await Future.delayed(const Duration(seconds: 1));
+      HapticFeedback.lightImpact();
+    }
+
+    setState(() => _countdownSeconds = null);
+    await _takePicture();
+  }
+
+  // Milestone 4.1: 连拍模式
+  void _startBurstMode() {
+    setState(() {
+      _isBurstMode = true;
+      _burstCount = 0;
+    });
+  }
+
+  void _stopBurstMode() {
+    setState(() => _isBurstMode = false);
+  }
+
+  Future<void> _burstCapture() async {
+    while (_isBurstMode && mounted) {
+      await _takePicture();
+      setState(() => _burstCount++);
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+  }
+
+  // Milestone 4.3: 分享照片
+  Future<void> _sharePhoto(String photoPath) async {
+    try {
+      await Share.shareXFiles([XFile(photoPath)], text: '来自喵喵补光灯的照片');
+    } catch (e) {
+      debugPrint('分享失败: $e');
+    }
+  }
+
+  // 打开照片预览
+  void _openPhotoPreview(String photoPath) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PhotoPreviewPage(
+          photoPath: photoPath,
+          onShare: () => _sharePhoto(photoPath),
+          onDelete: () {
+            setState(() => _recentPhotos.remove(photoPath));
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -275,11 +506,75 @@ class _LightingPageState extends State<LightingPage>
             ),
           ),
 
-          // ── 2.2 PIP Container ────────────────────────────────────────────
-          PipContainer(
-            screenSize: screenSize,
-            controller: _cameraController,
-          ),
+          // ── 2.2 PIP Container with Filter ────────────────────────────────
+          if (_cameraController != null &&
+              _cameraController!.value.isInitialized)
+            PipContainer(
+              screenSize: screenSize,
+              controller: _cameraController,
+              filterType: _currentFilter,
+            ),
+
+          // ── Flash Overlay ────────────────────────────────────────────────
+          if (_showFlashOverlay)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white,
+              ),
+            ),
+
+          // ── Countdown Overlay ────────────────────────────────────────────
+          if (_countdownSeconds != null)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.7),
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 1.5, end: 1.0),
+                    duration: const Duration(milliseconds: 500),
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: Text(
+                          '$_countdownSeconds',
+                          style: const TextStyle(
+                            color: AppTheme.vibrantPink,
+                            fontSize: 120,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+          // ── Burst Counter Overlay ────────────────────────────────────────
+          if (_isBurstMode)
+            Positioned(
+              top: safePadding.top + 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.vibrantPink.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '连拍中... $_burstCount 张',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // ── Bottom action zone ───────────────────────────────────────────
           Positioned(
@@ -289,10 +584,47 @@ class _LightingPageState extends State<LightingPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // P1.1 Shortcut toolbar
-                ShortcutToolbar(onShutter: () {}),
+                // Filter Tray
+                if (_showFilterTray)
+                  FilterTray(
+                    currentFilter: _currentFilter,
+                    onFilterSelected: (filter) {
+                      setState(() => _currentFilter = filter);
+                    },
+                    onClose: () => setState(() => _showFilterTray = false),
+                  ),
+                // Shortcut toolbar
+                ShortcutToolbar(
+                  onShutter: () async {
+                    if (_timerDuration != null) {
+                      await _startCountdown(_timerDuration!);
+                    } else {
+                      await _takePicture();
+                    }
+                  },
+                  onShutterLongPressStart: () {
+                    _startBurstMode();
+                    _burstCapture();
+                  },
+                  onShutterLongPressEnd: () {
+                    _stopBurstMode();
+                  },
+                  onFilterTap: () {
+                    setState(() => _showFilterTray = !_showFilterTray);
+                  },
+                  onTimerTap: () {
+                    _showTimerDialog();
+                  },
+                  recentPhotoPath:
+                      _recentPhotos.isNotEmpty ? _recentPhotos.first : null,
+                  onThumbnailTap: () {
+                    if (_recentPhotos.isNotEmpty) {
+                      _openPhotoPreview(_recentPhotos.first);
+                    }
+                  },
+                ),
                 const SizedBox(height: 14),
-                // P1.2 Bottom Tab Bar
+                // Bottom Tab Bar
                 SafeArea(
                   top: false,
                   child: BottomNavBar(
@@ -310,6 +642,99 @@ class _LightingPageState extends State<LightingPage>
             onClose: () => setState(() => _isMenuVisible = false),
           ),
         ],
+      ),
+    );
+  }
+
+  // 显示定时器设置对话框
+  void _showTimerDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.charcoal,
+        title: const Text('定时拍摄', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TimerOption(
+              label: '关闭',
+              onTap: () {
+                setState(() => _timerDuration = null);
+                Navigator.pop(context);
+              },
+              isSelected: _timerDuration == null,
+            ),
+            _TimerOption(
+              label: '3 秒',
+              onTap: () {
+                setState(() => _timerDuration = 3);
+                Navigator.pop(context);
+              },
+              isSelected: _timerDuration == 3,
+            ),
+            _TimerOption(
+              label: '5 秒',
+              onTap: () {
+                setState(() => _timerDuration = 5);
+                Navigator.pop(context);
+              },
+              isSelected: _timerDuration == 5,
+            ),
+            _TimerOption(
+              label: '10 秒',
+              onTap: () {
+                setState(() => _timerDuration = 10);
+                Navigator.pop(context);
+              },
+              isSelected: _timerDuration == 10,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimerOption extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool isSelected;
+
+  const _TimerOption({
+    required this.label,
+    required this.onTap,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.vibrantPink.withOpacity(0.2)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.vibrantPink
+                : Colors.white.withOpacity(0.1),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppTheme.vibrantPink : Colors.white70,
+              fontSize: 16,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:miaomiao_fill_light/core/theme/app_theme.dart';
+import 'package:miaomiao_fill_light/features/lighting/domain/models/filter_type.dart';
 
 class PipContainer extends StatefulWidget {
   final CameraController? controller;
   final Size screenSize;
+  final FilterType filterType;
 
   const PipContainer({
     super.key,
     this.controller,
     required this.screenSize,
+    this.filterType = FilterType.none,
   });
 
   @override
@@ -85,7 +88,7 @@ class _PipContainerState extends State<PipContainer> {
 
     if (hasController) {
       // 使用 ClipRect + FittedBox 确保相机画面填满容器且不失真
-      return ClipRRect(
+      Widget cameraPreview = ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: FittedBox(
           fit: BoxFit.cover,  // 填充容器，保持比例，可能裁剪
@@ -96,6 +99,16 @@ class _PipContainerState extends State<PipContainer> {
           ),
         ),
       );
+
+      // 应用滤镜
+      if (widget.filterType != FilterType.none && widget.filterType.colorFilter != null) {
+        cameraPreview = ColorFiltered(
+          colorFilter: widget.filterType.colorFilter!,
+          child: cameraPreview,
+        );
+      }
+
+      return cameraPreview;
     }
 
     return Stack(
